@@ -17,13 +17,13 @@ public class RLController extends Thread {
     PGMS pgms;
 
     public RLController(PGMS iface, long waitperiod) {
-        
+
         delay = waitperiod;
         this.pgms = iface;
 
     }
 
-    public void initDisplayMap(){
+    public void initDisplayMap() {
         mineworld = mapToWorld(pgms.getDisplayMap().getMineMap());
         learner = new RLearner(mineworld);
         mineworld.printTrainingMap();
@@ -40,11 +40,13 @@ public class RLController extends Thread {
         traintemp = new short[r * c];
         for (int y = 0; y < r; y++) {
             for (int x = 0; x < c; x++) {
-                traintemp[r * y + x] = (short) m.mine_map[y][x];
+                traintemp[y * c + x] = (short) m.mine_map[y][x];
+                //System.out.println("no-"+(r * y + x)+"="+traintemp[r * y + x]);
 //                mark_map[y][x] = false;
 //                unprobed_map[y][x] = true;
             }
         }
+
 
         mw.trainingMap = traintemp;
 
@@ -52,7 +54,7 @@ public class RLController extends Thread {
 
     }
 
-    public RLearner getLearner(){
+    public RLearner getLearner() {
         return learner;
     }
 

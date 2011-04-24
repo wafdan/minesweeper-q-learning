@@ -45,8 +45,15 @@ public class RLearner {
     }
 
     public void runEpoch() {
+//        //
+//        int rows = ((MineWorld) thisWorld).rows;
+//        int cols = ((MineWorld) thisWorld).columns;
+//        int mines = ((MineWorld) thisWorld).mines;
+//
+//        thisWorld = new MineWorld(rows, cols, mines);
+//        //
         state = thisWorld.resetState();
-        
+
         double this_Q;
         double max_Q;
         double new_Q;

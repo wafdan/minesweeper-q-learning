@@ -68,19 +68,18 @@ public final class RLStrategy implements Strategy {
 //        }
 
         for (;;) {
-
             //apply(m, x, y);		// Try strategy at this point
-            System.out.print("mworld.getstate: ");
+//            System.out.print("mworld.getstate: ");
             /**/
-            for (int i = 0; i < mworld.getState().length - 1; i++) {
-                if (mworld.getState()[i] == -2) {
-                    System.out.print("?");
-                } else {
-                    System.out.print(mworld.getState()[i]);
-                }
-            }
-            System.out.println();
-            //
+//            for (int i = 0; i < mworld.getState().length - 1; i++) {
+//                if (mworld.getState()[i] == -2) {
+//                    System.out.print("?");
+//                } else {
+//                    System.out.print(mworld.getState()[i]);
+//                }
+//            }
+//            System.out.println();
+            /**/
             action = policy.getBestAction(mworld.getState());
             actioncoord = policy.indexToCoord(action);
             if (actioncoord == null) {
