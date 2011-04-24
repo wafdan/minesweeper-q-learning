@@ -979,7 +979,8 @@ public class PGMS extends JApplet implements ActionListener, Runnable {
         // stop trainingr
         rlc.stopLearner();
         System.out.println("<<<<<<<<<<<<<<<<<PRINTS>>>>>>>>>>>>>>>>");
-        rl.getPolicy().printAllQvals();
+        //rl.getPolicy().printAllQvals();
+        rl.getPolicy().writeAllQvals();
 //        rl.getPolicy().printCoords();
 //        rl.getPolicy().printStates();
 

@@ -117,14 +117,14 @@ public class MineWorld implements RLWorld {
         coord[0] = x;
         coord[1] = y;
 
-        coveredMap[rows * y + x] = 0;
+        coveredMap[columns * y + x] = 0;
         System.out.println("now probing (" + x + "," + y + ")");
 
         return coord;
     }
 
     public short look(int x, int y) {
-        int coord = rows * y + x;
+        int coord = columns * y + x;
         System.out.println("look (" + x + "," + y + ")=" + this.stateArray[coord]);
         return this.stateArray[coord];
     }

@@ -2,12 +2,14 @@ package rl;
 
 import java.lang.reflect.Array;
 import java.math.BigInteger;
+import java.sql.*;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.TreeSet;
+import map.Map;
 
 public class RLPolicy {
 
@@ -68,7 +70,7 @@ public class RLPolicy {
 //            int hoo = factorial(area)
 //                    / (factorial(j) * factorial(area - j));
             int hoo = getStateNum(area, j);
-            System.out.println("Hoo_"+j+"="+hoo);
+            System.out.println("Hoo_" + j + "=" + hoo);
 //            stateDim.add(j, hoo);
             states += hoo;
         }
@@ -138,6 +140,113 @@ public class RLPolicy {
         System.out.println();
     }
 
+    public void writeAllQvals() {
+        System.out.println("Write All Qvals begin...");
+
+        String trainingmap = "";
+        short temp;
+        for (int i = 0; i < minefield.trainingMap.length; i++) {
+            temp = minefield.trainingMap[i];
+            if (temp == -1) {
+                trainingmap += "X";
+            } else {
+                trainingmap += minefield.trainingMap[i];
+            }
+        }
+
+        try {
+            String tablename = "minemap_"
+                    + rows + "x"
+                    + columns + "_"
+                    + mines + "_" + trainingmap;
+            Class.forName("org.sqlite.JDBC");
+            Connection conn = DriverManager.getConnection("jdbc:sqlite:/C:/sqlite/test.db");
+            Statement stat = conn.createStatement();
+            stat.executeUpdate("drop table if exists " + tablename + ";");
+            stat.executeUpdate("create table " + tablename
+                    + " (config text primary key,"
+                    + " qvals text);");
+            PreparedStatement prep = conn.prepareStatement("replace into "
+                    + tablename + " values(?,?);");
+
+            // Bangkitkan map sebanyak beberapa kali, entahlah berapa pastinya
+            String strstat = "";
+            String strqvals = "";
+            for (int i = 0; i < stateTable.size(); i++) {
+                short[] sta = stateTable.get(i);
+                //System.out.print("state: " + i + " ");
+                strstat = "";
+                short tempo;
+                for (int j = 0; j < sta.length; j++) {
+                    //System.out.print(sta[j]);
+                    temp = sta[j];
+                    if (temp == Map.UNPROBED) {
+                        strstat += "?";
+                    } else if (temp == Map.BOOM) {
+                        strstat += "X";
+                    } else if (temp == Map.MARKED) {
+                        strstat += ">";
+                    } else if (temp == Map.OUT_OF_BOUNDS) {
+                        strstat += ".";
+                    } else {
+                        strstat += sta[j];
+                    }
+
+                }
+
+                strqvals = "";
+                int[] cord;
+                ArrayList hoo = myQValues(sta);
+                for (int k = 0; k < hoo.size(); k++) {
+                    if (hoo.size() != 0) {
+                        cord = indexUnprobedToCoord(k, sta);
+                        strqvals += "[" + cord[0] + "," + cord[1] + "]=";
+                        //System.out.print("[" + cord[0] + "," + cord[1] + "]=");
+                        strqvals += hoo.get(k) + ";";
+                        //System.out.print(hoo.get(k) + " ");
+                    }
+                }
+                prep.setString(1, strstat);
+                prep.setString(2, strqvals);
+                prep.addBatch();
+                ////System.out.println();
+            }
+
+//            for (int i = 0; i < 9999; i++) {
+//                //generateMap();
+//                prep.setString(1, formatMinemap());
+//                prep.addBatch();
+//            }
+            conn.setAutoCommit(false);
+            prep.executeBatch();
+            conn.setAutoCommit(true);
+
+            // Sekedar menampilkan ke layar console
+            ResultSet rs = stat.executeQuery("select * from " + tablename + ";");
+            int idx = 0;
+            while (rs.next()) {
+                // System.out.println("map = "+rs.getString("config"));
+                System.out.println("state " + (idx++));
+                for (int y = 0; y < rows; y++) {
+                    System.out.println(rs.getString("config").substring(
+                            columns * y, columns * (y + 1)));
+                }
+                System.out.print("qvals: ");
+                System.out.println(rs.getString("qvals"));
+                System.out.println("------");
+            }
+            rs.close();
+            conn.close();
+        } catch (SQLException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        } catch (ClassNotFoundException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
+        System.out.println("Write All Successul.");
+    }
+
     public void initValues(double initValue) {
         int i;
         int actualdim = 0;
@@ -199,7 +308,7 @@ public class RLPolicy {
      * mengkonversi koordinat pada petak menjadi indeks pada array representasi state.
      */
     public int coordToIndex(int[] coord) {
-        return (rows * coord[1] + coord[0]);
+        return (columns * coord[1] + coord[0]);
     }
 
     public int[] indexUnprobedToCoord(int upcoord, short[] state) {
@@ -491,17 +600,40 @@ public class RLPolicy {
         int idx;
         if (state == null) {
             return -1;
+            //idx = -1;
         } else {
             //System.out.println("\tstateTablesize="+stateTable.size());
             for (int i = 0; i < stateTable.size(); i++) {
                 short[] hoo = stateTable.get(i);
                 if (Arrays.equals(state, hoo)) {
                     return i;
+                    //idx = -1;
+                    //break;
                 }
 
             }
         }
-        return -1;
+        short[] tobeinserted = new short[state.length];
+        System.arraycopy(state, 0, tobeinserted, 0, state.length);
+
+        stateTable.add(tobeinserted);
+        int j = stateTable.size() - 1;
+        stateToQval.add(j + 1, (Integer) stateToQval.get(j) + this.getUnprobeds(state).size());
+        int needact = this.getUnprobeds(state).size();
+        for (int i = 0; i < needact; i++) {
+            //qValuesStateAction.add(initValue++); // MESTI DIKEMBALIKAN SEPERTI SEMULA: tanpa inkremen!
+            if (loseState(state)) {
+                qValuesStateAction.add(-(double) minefield.minePenalty);
+            } else {
+                qValuesStateAction.add(0.0); //tanpa inkremen!
+            }
+            //System.out.print("[" + qValuesStateAction.get(i) + "]");
+        }
+
+        //stateTable.add(tobeinserted);
+        idx = stateIndex(tobeinserted);
+        return idx;
+        //return -1;
     }
 
     public double getQValue(short[] state, int[] action) {
